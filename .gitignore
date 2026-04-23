@@ -148,5 +148,6 @@ dmypy.json
 # папки со статикой и медиа
 media/
 
-sent_emails/
-
+mypy.ini
+pyproject.toml
+static_dev
