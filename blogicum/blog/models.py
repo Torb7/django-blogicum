@@ -97,3 +97,22 @@ class Post(AbstractModel):
 
     def __str__(self) -> str:
         return truncate_field_name(self.title)
+
+
+class Comment(AbstractModel):
+    text = models.TextField(verbose_name='Текст комментария')
+    post = models.ForeignKey(
+        Post, on_delete=models.CASCADE, verbose_name='Публикация'
+    )
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, verbose_name='Автор'
+    )
+
+    class Meta:
+        ordering = ('created_at',)
+        default_related_name = 'comments'
+        verbose_name = 'комментарий'
+        verbose_name_plural = 'Комментарии'
+
+    def __str__(self) -> str:
+        return truncate_field_name(self.text)
