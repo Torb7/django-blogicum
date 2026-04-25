@@ -88,6 +88,9 @@ class Post(AbstractModel):
         null=True,
         verbose_name='Категория',
     )
+    image = models.ImageField(
+        verbose_name='Изображение', blank=True, upload_to='blogs_images'
+    )
 
     class Meta:
         ordering = ('-pub_date',)
