@@ -100,3 +100,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_REDIRECT_URL = 'blog:index'
 LOGIN_URL = 'login'
+
+CSRF_FAILURE_VIEW = 'pages.views.csrf_failure'

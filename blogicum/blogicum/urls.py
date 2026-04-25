@@ -2,6 +2,9 @@ from django.contrib import admin
 from django.conf import settings
 from django.urls import path, include
 
+handler404 = 'pages.views.page_not_found'
+handler500 = 'pages.views.server_error'
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/', include('user.urls')),
