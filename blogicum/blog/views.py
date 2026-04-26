@@ -1,3 +1,5 @@
+from django.views.generic import ListView
+from django.db.models import Count
 from django.utils import timezone
 from django.shortcuts import render, get_object_or_404
 
@@ -16,12 +18,17 @@ def get_posts_related_models():
     )
 
 
-def index(request):
-    post_list = get_posts_related_models()[:LIMIT_POST]
+class PostListView(ListView):
+    model = Post
+    template_name = 'blog/index.html'
+    paginate_by = 10
 
-    context = {'post_list': post_list}
-
-    return render(request, 'blog/index.html', context)
+    def get_queryset(self):
+        return (
+            get_posts_related_models()
+            .annotate(comment_count=Count('comments'))
+            .order_by('-pub_date')
+        )
 
 
 def category_posts(request, category_slug):
