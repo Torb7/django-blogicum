@@ -2,7 +2,7 @@ from django.views.generic import ListView, DetailView
 from django.db.models import Count
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 
 from .models import Category, Post
 
@@ -80,15 +80,26 @@ class PostDetailView(DetailView):
         return context
 
 
-def category_posts(request, category_slug):
-    category = get_object_or_404(
-        Category, slug=category_slug, is_published=True
-    )
+class CategoryPostListView(ListView):
+    model = Post
+    template_name = 'blog/category.html'
+    paginate_by = 10
 
-    post_list = get_posts_related_models().filter(
-        category__slug=category_slug,
-    )
+    def get_queryset(self):
+        self.category = get_object_or_404(
+            Category, slug=self.kwargs['category_slug'], is_published=True
+        )
 
-    context = {'category': category, 'post_list': post_list}
+        posts = (
+            get_posts_related_models()
+            .filter(category__slug=self.kwargs['category_slug'])
+            .annotate(comment_count=Count('comments'))
+            .order_by('-pub_date')
+        )
 
-    return render(request, 'blog/category.html', context)
+        return posts
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['category'] = self.category
+        return context
