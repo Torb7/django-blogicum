@@ -1,10 +1,13 @@
-from django.views.generic import ListView, DetailView
+from django.views.generic import ListView, DetailView, CreateView
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
+from django.urls import reverse
 
 from .models import Category, Post
+from .forms import PostForm
 
 LIMIT_POST = 5
 
@@ -49,6 +52,21 @@ class UserPostListView(ListView):
         context['profile'] = self.author
 
         return context
+
+
+class PostCreateView(LoginRequiredMixin, CreateView):
+    model = Post
+    form_class = PostForm
+    template_name = 'blog/create.html'
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse(
+            'blog:profile', kwargs={'username': self.request.user.username}
+        )
 
 
 class PostListView(ListView):

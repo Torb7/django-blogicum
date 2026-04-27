@@ -21,4 +21,5 @@ urlpatterns = [
         views.UserPostListView.as_view(),
         name='profile',
     ),
+    path('posts/create/', views.PostCreateView.as_view(), name='create_post'),
 ]
