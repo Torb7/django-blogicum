@@ -1,9 +1,9 @@
-from django.views.generic import ListView, DetailView, CreateView
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.generic import ListView, DetailView, CreateView, UpdateView
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Count
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 
 from .models import Category, Post
@@ -67,6 +67,30 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         return reverse(
             'blog:profile', kwargs={'username': self.request.user.username}
         )
+
+
+class PostUpdateView(UserPassesTestMixin, UpdateView):
+    model = Post
+    form_class = PostForm
+    template_name = 'blog/create.html'
+
+    def get_object(self, queryset=None):
+        if not hasattr(self, 'object'):
+            return get_object_or_404(
+                get_posts_related_models(), pk=self.kwargs['post_id']
+            )
+
+        return self.object
+
+    def get_success_url(self):
+        return reverse('blog:post_detail', kwargs={'post_id': self.object.pk})
+
+    def test_func(self):
+        self.object = self.get_object()
+        return self.object.author == self.request.user
+
+    def handle_no_permission(self):
+        return redirect('blog:post_detail', post_id=self.kwargs['post_id'])
 
 
 class PostListView(ListView):

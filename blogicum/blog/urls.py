@@ -22,4 +22,9 @@ urlpatterns = [
         name='profile',
     ),
     path('posts/create/', views.PostCreateView.as_view(), name='create_post'),
+    path(
+        'posts/<int:post_id>/edit/',
+        views.PostUpdateView.as_view(),
+        name='edit_post',
+    ),
 ]
