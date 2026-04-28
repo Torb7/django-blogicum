@@ -1,4 +1,10 @@
-from django.views.generic import ListView, DetailView, CreateView, UpdateView
+from django.views.generic import (
+    ListView,
+    DetailView,
+    CreateView,
+    UpdateView,
+    DeleteView,
+)
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Count
 from django.utils import timezone
@@ -91,6 +97,34 @@ class PostUpdateView(UserPassesTestMixin, UpdateView):
 
     def handle_no_permission(self):
         return redirect('blog:post_detail', post_id=self.kwargs['post_id'])
+
+
+class PostDeleteView(UserPassesTestMixin, DeleteView):
+    model = Post
+    template_name = 'blog/create.html'
+
+    def get_object(self, queryset=None):
+        if not hasattr(self, 'object'):
+            return get_object_or_404(
+                get_posts_related_models(), pk=self.kwargs['post_id']
+            )
+
+        return self.object
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = {'instance': self.object}
+
+        return context
+
+    def get_success_url(self):
+        return reverse(
+            'blog:profile', kwargs={'username': self.request.user.username}
+        )
+
+    def test_func(self):
+        self.object = self.get_object()
+        return self.object.author == self.request.user
 
 
 class PostListView(ListView):
