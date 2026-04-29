@@ -220,3 +220,27 @@ class CommentUpdateView(UserPassesTestMixin, UpdateView):
     def test_func(self):
         self.object = self.get_object()
         return self.object.author == self.request.user
+
+
+class CommentDeleteView(UserPassesTestMixin, DeleteView):
+    model = Comment
+    template_name = 'blog/comment.html'
+
+    def get_object(self, queryset=None):
+        if not hasattr(self, 'object'):
+            return get_object_or_404(
+                Comment.objects.select_related('author'),
+                pk=self.kwargs['comment_id'],
+                post_id=self.kwargs['post_id'],
+            )
+
+        return self.object
+
+    def get_success_url(self):
+        return reverse(
+            'blog:post_detail', kwargs={'post_id': self.kwargs['post_id']}
+        )
+
+    def test_func(self):
+        self.object = self.get_object()
+        return self.object.author == self.request.user
