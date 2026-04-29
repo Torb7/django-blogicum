@@ -13,7 +13,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 
 from .models import Category, Post, Comment
-from .forms import PostForm, CommentForm
+from .forms import PostForm, CommentForm, UserForm
 
 LIMIT_POST = 5
 
@@ -58,6 +58,20 @@ class UserPostListView(ListView):
         context['profile'] = self.author
 
         return context
+
+
+class UserUpdateView(LoginRequiredMixin, UpdateView):
+    model = User
+    form_class = UserForm
+    template_name = 'blog/user.html'
+
+    def get_object(self, queryset=None):
+        return self.request.user
+
+    def get_success_url(self):
+        return reverse(
+            'blog:profile', kwargs={'username': self.object.username}
+        )
 
 
 class PostCreateView(LoginRequiredMixin, CreateView):
