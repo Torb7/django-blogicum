@@ -15,9 +15,9 @@ from django.urls import reverse
 from .models import Category, Post, Comment
 from .forms import PostForm, CommentForm, UserForm
 
-LIMIT_POST = 5
-
 User = get_user_model()
+
+POSTS_PER_PAGE = 10
 
 
 def get_posts_related_models():
@@ -30,10 +30,16 @@ def get_posts_related_models():
     )
 
 
+class OnlyAuthorMixin(UserPassesTestMixin):
+    def test_func(self):
+        self.object = self.get_object()
+        return self.object.author == self.request.user
+
+
 class UserPostListView(ListView):
     model = Post
     template_name = 'blog/profile.html'
-    paginate_by = 10
+    paginate_by = POSTS_PER_PAGE
 
     def get_queryset(self, queryset=None):
         self.author = get_object_or_404(User, username=self.kwargs['username'])
@@ -89,7 +95,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
         )
 
 
-class PostUpdateView(UserPassesTestMixin, UpdateView):
+class PostUpdateView(OnlyAuthorMixin, UpdateView):
     model = Post
     form_class = PostForm
     template_name = 'blog/create.html'
@@ -105,15 +111,11 @@ class PostUpdateView(UserPassesTestMixin, UpdateView):
     def get_success_url(self):
         return reverse('blog:post_detail', kwargs={'post_id': self.object.pk})
 
-    def test_func(self):
-        self.object = self.get_object()
-        return self.object.author == self.request.user
-
     def handle_no_permission(self):
         return redirect('blog:post_detail', post_id=self.kwargs['post_id'])
 
 
-class PostDeleteView(UserPassesTestMixin, DeleteView):
+class PostDeleteView(OnlyAuthorMixin, DeleteView):
     model = Post
     template_name = 'blog/create.html'
 
@@ -136,15 +138,11 @@ class PostDeleteView(UserPassesTestMixin, DeleteView):
             'blog:profile', kwargs={'username': self.request.user.username}
         )
 
-    def test_func(self):
-        self.object = self.get_object()
-        return self.object.author == self.request.user
-
 
 class PostListView(ListView):
     model = Post
     template_name = 'blog/index.html'
-    paginate_by = 10
+    paginate_by = POSTS_PER_PAGE
 
     def get_queryset(self):
         return (
@@ -174,7 +172,7 @@ class PostDetailView(DetailView):
 class CategoryPostListView(ListView):
     model = Post
     template_name = 'blog/category.html'
-    paginate_by = 10
+    paginate_by = POSTS_PER_PAGE
 
     def get_queryset(self):
         self.category = get_object_or_404(
@@ -211,7 +209,7 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
         )
 
 
-class CommentUpdateView(UserPassesTestMixin, UpdateView):
+class CommentUpdateView(OnlyAuthorMixin, UpdateView):
     model = Comment
     form_class = CommentForm
     template_name = 'blog/comment.html'
@@ -231,12 +229,8 @@ class CommentUpdateView(UserPassesTestMixin, UpdateView):
             'blog:post_detail', kwargs={'post_id': self.kwargs['post_id']}
         )
 
-    def test_func(self):
-        self.object = self.get_object()
-        return self.object.author == self.request.user
 
-
-class CommentDeleteView(UserPassesTestMixin, DeleteView):
+class CommentDeleteView(OnlyAuthorMixin, DeleteView):
     model = Comment
     template_name = 'blog/comment.html'
 
@@ -254,7 +248,3 @@ class CommentDeleteView(UserPassesTestMixin, DeleteView):
         return reverse(
             'blog:post_detail', kwargs={'post_id': self.kwargs['post_id']}
         )
-
-    def test_func(self):
-        self.object = self.get_object()
-        return self.object.author == self.request.user
