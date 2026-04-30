@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
+from django.http import Http404
 
 from .models import Category, Post, Comment
 from .forms import PostForm, CommentForm, UserForm
@@ -157,9 +158,20 @@ class PostDetailView(DetailView):
     template_name = 'blog/detail.html'
 
     def get_object(self, queryset=None):
-        return get_object_or_404(
-            get_posts_related_models(), pk=self.kwargs['post_id']
+        post = get_object_or_404(
+            Post.objects.select_related('author', 'category', 'location'),
+            pk=self.kwargs['post_id'],
         )
+
+        if post.author != self.request.user:
+            if (
+                post.pub_date > timezone.now()
+                or not post.is_published
+                or not post.category.is_published
+            ):
+                raise Http404()
+
+        return post
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
