@@ -35,6 +35,9 @@ class OnlyAuthorMixin(UserPassesTestMixin):
         self.object = self.get_object()
         return self.object.author == self.request.user
 
+    def handle_no_permission(self):
+        return redirect('blog:post_detail', post_id=self.kwargs['post_id'])
+
 
 class UserPostListView(ListView):
     model = Post
@@ -110,9 +113,6 @@ class PostUpdateView(OnlyAuthorMixin, UpdateView):
 
     def get_success_url(self):
         return reverse('blog:post_detail', kwargs={'post_id': self.object.pk})
-
-    def handle_no_permission(self):
-        return redirect('blog:post_detail', post_id=self.kwargs['post_id'])
 
 
 class PostDeleteView(OnlyAuthorMixin, DeleteView):
