@@ -15,10 +15,9 @@ from django.http import Http404
 
 from .models import Category, Post, Comment
 from .forms import PostForm, CommentForm, UserForm
+from blogicum.settings import POSTS_PER_PAGE
 
 User = get_user_model()
-
-POSTS_PER_PAGE = 10
 
 
 def get_posts_related_models():
