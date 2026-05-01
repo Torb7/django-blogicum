@@ -6,7 +6,6 @@ from django.views.generic import (
     DeleteView,
 )
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.db.models import Count
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404, redirect
@@ -35,10 +34,18 @@ class UserPostListView(ListView):
     template_name = 'blog/profile.html'
     paginate_by = POSTS_PER_PAGE
 
-    def get_queryset(self, queryset=None):
-        self.author = get_object_or_404(User, username=self.kwargs['username'])
+    def get_author(self):
+        if not hasattr(self, 'author'):
+            self.author = get_object_or_404(
+                User, username=self.kwargs['username']
+            )
 
-        if self.author == self.request.user:
+        return self.author
+
+    def get_queryset(self, queryset=None):
+        author = self.get_author()
+
+        if author == self.request.user:
             return get_posts_related_models(
                 Post.objects, is_annotate_and_order=True
             ).filter(author=self.author)
@@ -49,7 +56,7 @@ class UserPostListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['profile'] = self.author
+        context['profile'] = self.get_author()
 
         return context
 
@@ -169,10 +176,16 @@ class CategoryPostListView(ListView):
     template_name = 'blog/category.html'
     paginate_by = POSTS_PER_PAGE
 
+    def get_category(self):
+        if not hasattr(self, 'category'):
+            self.category = get_object_or_404(
+                Category, slug=self.kwargs['category_slug'], is_published=True
+            )
+
+        return self.category
+
     def get_queryset(self):
-        self.category = get_object_or_404(
-            Category, slug=self.kwargs['category_slug'], is_published=True
-        )
+        self.get_category()
 
         return get_posts_related_models(
             Post.objects, is_published=True, is_annotate_and_order=True
@@ -180,7 +193,7 @@ class CategoryPostListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['category'] = self.category
+        context['category'] = self.get_category()
         return context
 
 
