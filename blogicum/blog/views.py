@@ -205,8 +205,16 @@ class CategoryPostListView(ListView):
         return context
 
 
-class CommentCreateView(LoginRequiredMixin, CreateView):
+class CommentMixin:
     model = Comment
+
+    def get_success_url(self):
+        return reverse(
+            'blog:post_detail', kwargs={'post_id': self.kwargs['post_id']}
+        )
+
+
+class CommentCreateView(CommentMixin, LoginRequiredMixin, CreateView):
     form_class = CommentForm
 
     def form_valid(self, form):
@@ -217,14 +225,8 @@ class CommentCreateView(LoginRequiredMixin, CreateView):
 
         return super().form_valid(form)
 
-    def get_success_url(self):
-        return reverse(
-            'blog:post_detail', kwargs={'post_id': self.kwargs['post_id']}
-        )
 
-
-class CommentUpdateView(OnlyAuthorMixin, UpdateView):
-    model = Comment
+class CommentUpdateView(CommentMixin, OnlyAuthorMixin, UpdateView):
     form_class = CommentForm
     template_name = 'blog/comment.html'
 
@@ -238,14 +240,8 @@ class CommentUpdateView(OnlyAuthorMixin, UpdateView):
 
         return self.object
 
-    def get_success_url(self):
-        return reverse(
-            'blog:post_detail', kwargs={'post_id': self.kwargs['post_id']}
-        )
 
-
-class CommentDeleteView(OnlyAuthorMixin, DeleteView):
-    model = Comment
+class CommentDeleteView(CommentMixin, OnlyAuthorMixin, DeleteView):
     template_name = 'blog/comment.html'
 
     def get_object(self, queryset=None):
@@ -257,8 +253,3 @@ class CommentDeleteView(OnlyAuthorMixin, DeleteView):
             )
 
         return self.object
-
-    def get_success_url(self):
-        return reverse(
-            'blog:post_detail', kwargs={'post_id': self.kwargs['post_id']}
-        )
