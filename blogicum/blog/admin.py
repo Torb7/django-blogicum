@@ -3,6 +3,16 @@ from django.contrib import admin
 from blog.models import Category, Location, Post, Comment
 
 
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ('text', 'post', 'is_published', 'author')
+
+    list_editable = ('post', 'is_published', 'author')
+    list_display_links = ('text',)
+
+    list_filter = ('post', 'text', 'author')
+    search_fields = ('text', 'post__title', 'author__username')
+
+
 class CommentInline(admin.StackedInline):
     model = Comment
     extra = 0
@@ -66,3 +76,4 @@ admin.site.empty_value_display = 'Не задано'
 admin.site.register(Location, LocationAdmin)
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(Post, PostAdmin)
+admin.site.register(Comment, CommentAdmin)
