@@ -22,8 +22,8 @@ User = get_user_model()
 
 class OnlyAuthorMixin(UserPassesTestMixin):
     def test_func(self):
-        self.object = self.get_object()
-        return self.object.author == self.request.user
+        object = self.get_object()
+        return object.author == self.request.user
 
     def handle_no_permission(self):
         return redirect('blog:post_detail', post_id=self.kwargs['post_id'])
@@ -97,7 +97,7 @@ class PostUpdateView(OnlyAuthorMixin, UpdateView):
 
     def get_object(self, queryset=None):
         if not hasattr(self, 'object'):
-            return get_object_or_404(
+            self.object = get_object_or_404(
                 get_posts_related_models(Post.objects),
                 pk=self.kwargs['post_id'],
             )
@@ -114,7 +114,7 @@ class PostDeleteView(OnlyAuthorMixin, DeleteView):
 
     def get_object(self, queryset=None):
         if not hasattr(self, 'object'):
-            return get_object_or_404(
+            self.object = get_object_or_404(
                 get_posts_related_models(Post.objects),
                 pk=self.kwargs['post_id'],
             )
@@ -224,7 +224,7 @@ class CommentUpdateView(CommentMixin, OnlyAuthorMixin, UpdateView):
 
     def get_object(self, queryset=None):
         if not hasattr(self, 'object'):
-            return get_object_or_404(
+            self.object = get_object_or_404(
                 Comment.objects.select_related('author'),
                 pk=self.kwargs['comment_id'],
                 post_id=self.kwargs['post_id'],
@@ -238,7 +238,7 @@ class CommentDeleteView(CommentMixin, OnlyAuthorMixin, DeleteView):
 
     def get_object(self, queryset=None):
         if not hasattr(self, 'object'):
-            return get_object_or_404(
+            self.object = get_object_or_404(
                 Comment.objects.select_related('author'),
                 pk=self.kwargs['comment_id'],
                 post_id=self.kwargs['post_id'],
