@@ -16,18 +16,9 @@ from django.http import Http404
 from .models import Category, Post, Comment
 from .forms import PostForm, CommentForm, UserForm
 from blogicum.settings import POSTS_PER_PAGE
+from .querysets import get_posts_related_models
 
 User = get_user_model()
-
-
-def get_posts_related_models():
-    return Post.objects.select_related(
-        'author', 'category', 'location'
-    ).filter(
-        pub_date__date__lte=timezone.now(),
-        is_published=True,
-        category__is_published=True,
-    )
 
 
 class OnlyAuthorMixin(UserPassesTestMixin):
@@ -48,19 +39,13 @@ class UserPostListView(ListView):
         self.author = get_object_or_404(User, username=self.kwargs['username'])
 
         if self.author == self.request.user:
-            return (
-                Post.objects.select_related('author', 'category', 'location')
-                .filter(author=self.author)
-                .annotate(comment_count=Count('comments'))
-                .order_by('-pub_date')
-            )
+            return get_posts_related_models(
+                Post.objects, is_annotate_and_order=True
+            ).filter(author=self.author)
 
-        return (
-            get_posts_related_models()
-            .filter(author=self.author)
-            .annotate(comment_count=Count('comments'))
-            .order_by('-pub_date')
-        )
+        return get_posts_related_models(
+            Post.objects, is_published=True, is_annotate_and_order=True
+        ).filter(author=self.author)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -106,7 +91,8 @@ class PostUpdateView(OnlyAuthorMixin, UpdateView):
     def get_object(self, queryset=None):
         if not hasattr(self, 'object'):
             return get_object_or_404(
-                get_posts_related_models(), pk=self.kwargs['post_id']
+                get_posts_related_models(Post.objects),
+                pk=self.kwargs['post_id'],
             )
 
         return self.object
@@ -122,7 +108,8 @@ class PostDeleteView(OnlyAuthorMixin, DeleteView):
     def get_object(self, queryset=None):
         if not hasattr(self, 'object'):
             return get_object_or_404(
-                get_posts_related_models(), pk=self.kwargs['post_id']
+                get_posts_related_models(Post.objects),
+                pk=self.kwargs['post_id'],
             )
 
         return self.object
@@ -145,10 +132,8 @@ class PostListView(ListView):
     paginate_by = POSTS_PER_PAGE
 
     def get_queryset(self):
-        return (
-            get_posts_related_models()
-            .annotate(comment_count=Count('comments'))
-            .order_by('-pub_date')
+        return get_posts_related_models(
+            Post.objects, is_published=True, is_annotate_and_order=True
         )
 
 
@@ -158,8 +143,7 @@ class PostDetailView(DetailView):
 
     def get_object(self, queryset=None):
         post = get_object_or_404(
-            Post.objects.select_related('author', 'category', 'location'),
-            pk=self.kwargs['post_id'],
+            get_posts_related_models(Post.objects), pk=self.kwargs['post_id']
         )
 
         if post.author != self.request.user:
@@ -190,14 +174,9 @@ class CategoryPostListView(ListView):
             Category, slug=self.kwargs['category_slug'], is_published=True
         )
 
-        posts = (
-            get_posts_related_models()
-            .filter(category__slug=self.kwargs['category_slug'])
-            .annotate(comment_count=Count('comments'))
-            .order_by('-pub_date')
-        )
-
-        return posts
+        return get_posts_related_models(
+            Post.objects, is_published=True, is_annotate_and_order=True
+        ).filter(category__slug=self.kwargs['category_slug'])
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -220,7 +199,7 @@ class CommentCreateView(CommentMixin, LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.author = self.request.user
         form.instance.post = get_object_or_404(
-            get_posts_related_models(), pk=self.kwargs['post_id']
+            get_posts_related_models(Post.objects), pk=self.kwargs['post_id']
         )
 
         return super().form_valid(form)
