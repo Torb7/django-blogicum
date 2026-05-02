@@ -82,15 +82,9 @@ class PostCreateView(LoginRequiredMixin, CreateView):
 class PostUpdateView(OnlyAuthorMixin, UpdateView):
     model = Post
     form_class = PostForm
+    queryset = get_posts_related_models()
+    pk_url_kwarg = 'post_id'
     template_name = 'blog/create.html'
-
-    def get_object(self, queryset=None):
-        if not hasattr(self, 'object'):
-            self.object = get_object_or_404(
-                get_posts_related_models(), pk=self.kwargs['post_id']
-            )
-
-        return self.object
 
     def get_success_url(self):
         return reverse('blog:post_detail', kwargs={'post_id': self.object.pk})
@@ -98,15 +92,9 @@ class PostUpdateView(OnlyAuthorMixin, UpdateView):
 
 class PostDeleteView(OnlyAuthorMixin, DeleteView):
     model = Post
+    queryset = get_posts_related_models()
+    pk_url_kwarg = 'post_id'
     template_name = 'blog/create.html'
-
-    def get_object(self, queryset=None):
-        if not hasattr(self, 'object'):
-            self.object = get_object_or_404(
-                get_posts_related_models(), pk=self.kwargs['post_id']
-            )
-
-        return self.object
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
