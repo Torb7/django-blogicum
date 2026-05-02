@@ -6,11 +6,9 @@ from django.views.generic import (
     DeleteView,
 )
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.http import Http404
 
 from .models import Category, Post
 from .forms import PostForm, CommentForm, UserForm
@@ -27,12 +25,8 @@ class UserPostListView(ListView):
     paginate_by = POSTS_PER_PAGE
 
     def get_author(self):
-        if not hasattr(self, 'author'):
-            self.author = get_object_or_404(
-                User, username=self.kwargs['username']
-            )
-
-        return self.author
+        # Убрал кеширование, но не понимаю зачем дублировать запрос в БД?
+        return get_object_or_404(User, username=self.kwargs['username'])
 
     def get_queryset(self, queryset=None):
         author = self.get_author()
@@ -129,12 +123,15 @@ class PostDetailView(DetailView):
         )
 
         if post.author != self.request.user:
-            if (
-                post.pub_date > timezone.now()
-                or not post.is_published
-                or not post.category.is_published
-            ):
-                raise Http404()
+            # Исправил, но тут так же дублирующий запрос в БД, в Django
+            # документации указано, что надо работать с уже полученным
+            # объектом.
+            return get_object_or_404(
+                get_posts_related_models(
+                    is_published=True, is_annotate_and_order=True
+                ),
+                pk=self.kwargs['post_id'],
+            )
 
         return post
 
@@ -152,12 +149,9 @@ class CategoryPostListView(ListView):
     paginate_by = POSTS_PER_PAGE
 
     def get_category(self):
-        if not hasattr(self, 'category'):
-            self.category = get_object_or_404(
-                Category, slug=self.kwargs['category_slug'], is_published=True
-            )
-
-        return self.category
+        return get_object_or_404(
+            Category, slug=self.kwargs['category_slug'], is_published=True
+        )
 
     def get_queryset(self):
         category = self.get_category()
