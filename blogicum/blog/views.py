@@ -45,14 +45,11 @@ class UserPostListView(ListView):
     def get_queryset(self, queryset=None):
         author = self.get_author()
 
-        if author == self.request.user:
-            return get_posts_related_models(
-                Post.objects, is_annotate_and_order=True
-            ).filter(author=self.author)
+        is_published = not author == self.request.user
 
         return get_posts_related_models(
-            Post.objects, is_published=True, is_annotate_and_order=True
-        ).filter(author=self.author)
+            author.posts, is_published=is_published, is_annotate_and_order=True
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -98,8 +95,7 @@ class PostUpdateView(OnlyAuthorMixin, UpdateView):
     def get_object(self, queryset=None):
         if not hasattr(self, 'object'):
             self.object = get_object_or_404(
-                get_posts_related_models(Post.objects),
-                pk=self.kwargs['post_id'],
+                get_posts_related_models(), pk=self.kwargs['post_id']
             )
 
         return self.object
@@ -115,8 +111,7 @@ class PostDeleteView(OnlyAuthorMixin, DeleteView):
     def get_object(self, queryset=None):
         if not hasattr(self, 'object'):
             self.object = get_object_or_404(
-                get_posts_related_models(Post.objects),
-                pk=self.kwargs['post_id'],
+                get_posts_related_models(), pk=self.kwargs['post_id']
             )
 
         return self.object
@@ -140,7 +135,7 @@ class PostListView(ListView):
 
     def get_queryset(self):
         return get_posts_related_models(
-            Post.objects, is_published=True, is_annotate_and_order=True
+            is_published=True, is_annotate_and_order=True
         )
 
 
@@ -150,7 +145,7 @@ class PostDetailView(DetailView):
 
     def get_object(self, queryset=None):
         post = get_object_or_404(
-            get_posts_related_models(Post.objects), pk=self.kwargs['post_id']
+            get_posts_related_models(), pk=self.kwargs['post_id']
         )
 
         if post.author != self.request.user:
@@ -185,11 +180,11 @@ class CategoryPostListView(ListView):
         return self.category
 
     def get_queryset(self):
-        self.get_category()
+        category = self.get_category()
 
         return get_posts_related_models(
-            Post.objects, is_published=True, is_annotate_and_order=True
-        ).filter(category__slug=self.kwargs['category_slug'])
+            category.posts, is_published=True, is_annotate_and_order=True
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -212,7 +207,7 @@ class CommentCreateView(CommentMixin, LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.author = self.request.user
         form.instance.post = get_object_or_404(
-            get_posts_related_models(Post.objects), pk=self.kwargs['post_id']
+            get_posts_related_models(), pk=self.kwargs['post_id']
         )
 
         return super().form_valid(form)
