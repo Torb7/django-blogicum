@@ -5,28 +5,20 @@ from django.views.generic import (
     UpdateView,
     DeleteView,
 )
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404, redirect
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.http import Http404
 
-from .models import Category, Post, Comment
+from .models import Category, Post
 from .forms import PostForm, CommentForm, UserForm
 from blogicum.settings import POSTS_PER_PAGE
 from .querysets import get_posts_related_models
+from .mixins import OnlyAuthorMixin, CommentMixin
 
 User = get_user_model()
-
-
-class OnlyAuthorMixin(UserPassesTestMixin):
-    def test_func(self):
-        object = self.get_object()
-        return object.author == self.request.user
-
-    def handle_no_permission(self):
-        return redirect('blog:post_detail', post_id=self.kwargs['post_id'])
 
 
 class UserPostListView(ListView):
@@ -192,15 +184,6 @@ class CategoryPostListView(ListView):
         return context
 
 
-class CommentMixin:
-    model = Comment
-
-    def get_success_url(self):
-        return reverse(
-            'blog:post_detail', kwargs={'post_id': self.kwargs['post_id']}
-        )
-
-
 class CommentCreateView(CommentMixin, LoginRequiredMixin, CreateView):
     form_class = CommentForm
 
@@ -217,26 +200,6 @@ class CommentUpdateView(CommentMixin, OnlyAuthorMixin, UpdateView):
     form_class = CommentForm
     template_name = 'blog/comment.html'
 
-    def get_object(self, queryset=None):
-        if not hasattr(self, 'object'):
-            self.object = get_object_or_404(
-                Comment.objects.select_related('author'),
-                pk=self.kwargs['comment_id'],
-                post_id=self.kwargs['post_id'],
-            )
-
-        return self.object
-
 
 class CommentDeleteView(CommentMixin, OnlyAuthorMixin, DeleteView):
     template_name = 'blog/comment.html'
-
-    def get_object(self, queryset=None):
-        if not hasattr(self, 'object'):
-            self.object = get_object_or_404(
-                Comment.objects.select_related('author'),
-                pk=self.kwargs['comment_id'],
-                post_id=self.kwargs['post_id'],
-            )
-
-        return self.object
