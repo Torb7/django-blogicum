@@ -25,7 +25,6 @@ class UserPostListView(ListView):
     paginate_by = POSTS_PER_PAGE
 
     def get_author(self):
-        # Убрал кеширование, но не понимаю зачем дублировать запрос в БД?
         return get_object_or_404(User, username=self.kwargs['username'])
 
     def get_queryset(self, queryset=None):
@@ -123,9 +122,6 @@ class PostDetailView(DetailView):
         )
 
         if post.author != self.request.user:
-            # Исправил, но тут так же дублирующий запрос в БД, в Django
-            # документации указано, что надо работать с уже полученным
-            # объектом.
             return get_object_or_404(
                 get_posts_related_models(
                     is_published=True, is_annotate_and_order=True
